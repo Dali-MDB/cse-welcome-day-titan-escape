@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Titan Dodge - Attack on Titan</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial Black', sans-serif;
+            overflow: hidden;
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            background: linear-gradient(to bottom, #87ceeb 0%, #f0e68c 100%);
+            border: 4px solid #8b4513;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-image: 
+                linear-gradient(rgba(139, 69, 19, 0.3) 2px, transparent 2px),
+                linear-gradient(90deg, rgba(139, 69, 19, 0.3) 2px, transparent 2px);
+            background-size: 50px 50px;
+        }
+
+        .wall {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 150px;
+            background: linear-gradient(to bottom, #8b7355 0%, #654321 100%);
+            border-top: 5px solid #a0826d;
+        }
+
+        .wall::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 20px;
+            background: repeating-linear-gradient(90deg, #654321 0px, #654321 30px, #8b7355 30px, #8b7355 32px);
+        }
+
+        #player {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: #2d4a2b;
+            border: 3px solid #1a1a1a;
+            border-radius: 5px;
+            transition: box-shadow 0.1s;
+            z-index: 50;
+        }
+
+        #player::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            background: #c19a6b;
+            border-radius: 50%;
+        }
+
+        #player::after {
+            content: '⚔';
+            position: absolute;
+            font-size: 20px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        #player.boosting {
+            box-shadow: 0 0 20px #4da6ff, 0 0 40px #4da6ff;
+            animation: boost 0.3s ease;
+        }
+
+        #player.slashing {
+            animation: slash 0.4s ease;
+        }
+
+        #player.invincible {
+            box-shadow: 0 0 20px #ffd700, 0 0 40px #ffd700;
+            animation: pulse 0.5s ease infinite;
+        }
+
+        @keyframes boost {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        @keyframes slash {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(360deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .titan {
+            position: absolute;
+            width: 60px;
+            height: 80px;
+            background: #d4a574;
+            border: 3px solid #8b4513;
+            border-radius: 10px 10px 5px 5px;
+            transition: transform 0.1s;
+        }
+
+        .titan::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 12px;
+            width: 12px;
+            height: 12px;
+            background: #000;
+            border-radius: 50%;
+            box-shadow: 22px 0 0 #000;
+        }
+
+        .titan::after {
+            content: '';
+            position: absolute;
+            bottom: 25px;
+            left: 15px;
+            width: 30px;
+            height: 8px;
+            background: #000;
+            border-radius: 3px;
+        }
+
+        .titan.armored {
+            background: #696969;
+            border-color: #2f4f4f;
+            box-shadow: 0 0 15px rgba(105, 105, 105, 0.6);
+        }
+
+        .titan.colossal {
+            width: 90px;
+            height: 120px;
+            background: #ff6b6b;
+            border-color: #c92a2a;
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.8);
+        }
+
+        .titan.abnormal {
+            background: #9b59b6;
+            border-color: #6c3483;
+            animation: abnormalWobble 0.5s ease-in-out infinite;
+        }
+
+        @keyframes abnormalWobble {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .titan.beast {
+            background: #8b7355;
+            border-color: #654321;
+            box-shadow: 0 0 15px rgba(139, 115, 85, 0.6);
+        }
+
+        .blade {
+            position: absolute;
+            width: 50px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #c0c0c0, #ffffff, #c0c0c0, transparent);
+            box-shadow: 0 0 10px #fff;
+            z-index: 40;
+            animation: bladeFly 0.5s linear;
+        }
+
+        @keyframes bladeFly {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        .explosion {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ff6b6b, #ff4444, transparent);
+            animation: explode 0.5s ease-out;
+            pointer-events: none;
+            z-index: 60;
+        }
+
+        @keyframes explode {
+            from { transform: scale(0); opacity: 1; }
+            to { transform: scale(2); opacity: 0; }
+        }
+
+        .powerup {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            animation: float 2s ease-in-out infinite;
+            box-shadow: 0 0 20px;
+            z-index: 45;
+        }
+
+        .powerup.thunder {
+            background: radial-gradient(circle, #ffd700, #ffaa00);
+            box-shadow: 0 0 20px #ffd700;
+        }
+
+        .powerup.shield {
+            background: radial-gradient(circle, #4da6ff, #0066cc);
+            box-shadow: 0 0 20px #4da6ff;
+        }
+
+        .powerup.blade {
+            background: radial-gradient(circle, #ff4444, #cc0000);
+            box-shadow: 0 0 20px #ff4444;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+        }
+
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 24px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            z-index: 100;
+        }
+
+        #abilities {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+
+        .ability {
+            background: rgba(0,0,0,0.7);
+            border: 2px solid white;
+            border-radius: 5px;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            color: white;
+            font-size: 14px;
+            min-width: 180px;
+        }
+
+        .ability.ready {
+            border-color: #4da6ff;
+            box-shadow: 0 0 10px #4da6ff;
+        }
+
+        .ability.cooldown {
+            opacity: 0.5;
+        }
+
+        .ability-bar {
+            height: 6px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 3px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+
+        .ability-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4da6ff, #0066cc);
+            transition: width 0.1s;
+        }
+
+        #notification {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 18px;
+            z-index: 200;
+            display: none;
+            border: 2px solid;
+            animation: notifySlide 0.3s ease;
+        }
+
+        @keyframes notifySlide {
+            0% { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+            100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+
+        #startScreen, #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 300;
+            color: white;
+        }
+
+        h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #ff4444;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
+        }
+
+        .btn {
+            padding: 15px 40px;
+            font-size: 24px;
+            background: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Arial Black', sans-serif;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: #ff6666;
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(0,0,0,0.6);
+        }
+
+        .instructions {
+            margin: 20px 0;
+            text-align: center;
+            line-height: 1.8;
+            font-size: 16px;
+            max-width: 600px;
+        }
+
+        #finalScore {
+            font-size: 36px;
+            margin: 20px 0;
+            color: #ffd700;
+        }
+
+        #stats {
+            font-size: 18px;
+            margin-top: 15px;
+            color: #4da6ff;
+        }
+
+        #highScore {
+            font-size: 20px;
+            margin-top: 10px;
+            color: #4da6ff;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div class="wall"></div>
+        
+        <div id="player"></div>
+        
+        <div id="ui">
+            <div>Score: <span id="score">0</span></div>
+            <div style="font-size: 16px; margin-top: 5px;">Kills: <span id="kills">0</span></div>
+            <div style="font-size: 16px;">Wave: <span id="difficulty">1</span></div>
+        </div>
+        
+        <div id="abilities">
+            <div class="ability" id="dashAbility">
+                <div>⚡ ODM DASH (SPACE)</div>
+                <div class="ability-bar"><div class="ability-fill" id="dashFill"></div></div>
+            </div>
+            <div class="ability" id="slashAbility">
+                <div>⚔️ BLADE SLASH (Q)</div>
+                <div class="ability-bar"><div class="ability-fill" id="slashFill"></div></div>
+            </div>
+            <div class="ability" id="ultimateAbility">
+                <div>💥 THUNDER SPEAR (E)</div>
+                <div class="ability-bar"><div class="ability-fill" id="ultimateFill"></div></div>
+            </div>
+        </div>
+
+        <div id="notification"></div>
+
+        <div id="startScreen">
+            <h1>⚔️ TITAN DODGE ⚔️</h1>
+            <div class="instructions">
+                <p><strong>🎮 CONTROLS:</strong> Arrow Keys / WASD to Move</p>
+                <p><strong>SPACE</strong> - ODM Dash | <strong>Q</strong> - Blade Slash | <strong>E</strong> - Thunder Spear</p>
+                <p style="margin-top: 10px;"><strong>🎯 SURVIVE:</strong> Dodge titans and collect powerups!</p>
+            </div>
+            <button class="btn" id="startBtn" style="margin-top: 30px; font-size: 28px; padding: 20px 50px;">START MISSION</button>
+            <div id="highScore" style="margin-top: 20px;"></div>
+        </div>
+
+        <div id="gameOverScreen" style="display: none;">
+            <h1>⚠️ GAME OVER ⚠️</h1>
+            <p style="font-size: 24px; margin-bottom: 20px;">You Were Caught!</p>
+            <div id="finalScore"></div>
+            <div id="stats"></div>
+            <button class="btn" id="restartBtn">TRY AGAIN</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let game = {
+            running: false,
+            score: 0,
+            kills: 0,
+            difficulty: 1,
+            player: {
+                x: 100,
+                y: 300,
+                width: 40,
+                height: 40,
+                speed: 5,
+                dashSpeed: 15,
+                isDashing: false,
+                dashCooldown: 0,
+                maxDashCooldown: 90,
+                slashCooldown: 0,
+                maxSlashCooldown: 180,
+                ultimateCooldown: 0,
+                maxUltimateCooldown: 600,
+                invincible: false,
+                invincibleTimer: 0
+            },
+            titans: [],
+            projectiles: [],
+            powerups: [],
+            blades: [],
+            keys: {},
+            spawnTimer: 0,
+            spawnInterval: 120,
+            difficultyTimer: 0,
+            powerupTimer: 0
+        };
+
+        let highScore = parseInt(localStorage.getItem('titanDodgeHighScore')) || 0;
+        document.getElementById('highScore').textContent = `🏆 High Score: ${highScore}`;
+
+        // Add event listeners
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('restartBtn').addEventListener('click', restartGame);
+
+        document.addEventListener('keydown', (e) => {
+            game.keys[e.key.toLowerCase()] = true;
+            
+            if (!game.running) return;
+            
+            if (e.key === ' ') {
+                e.preventDefault();
+                activateDash();
+            }
+            if (e.key.toLowerCase() === 'q') {
+                e.preventDefault();
+                activateSlash();
+            }
+            if (e.key.toLowerCase() === 'e') {
+                e.preventDefault();
+                activateUltimate();
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            game.keys[e.key.toLowerCase()] = false;
+        });
+
+        function startGame() {
+            document.getElementById('startScreen').style.display = 'none';
+            game.running = true;
+            game.score = 0;
+            game.kills = 0;
+            game.difficulty = 1;
+            game.titans = [];
+            game.projectiles = [];
+            game.powerups = [];
+            game.blades = [];
+            game.player.x = 100;
+            game.player.y = 300;
+            game.player.dashCooldown = 0;
+            game.player.slashCooldown = 0;
+            game.player.ultimateCooldown = 0;
+            game.player.invincible = false;
+            game.spawnTimer = 0;
+            game.difficultyTimer = 0;
+            game.powerupTimer = 0;
+            gameLoop();
+        }
+
+        function restartGame() {
+            document.getElementById('gameOverScreen').style.display = 'none';
+            startGame();
+        }
+
+        function showNotification(text, color = '#4da6ff') {
+            const notif = document.getElementById('notification');
+            notif.textContent = text;
+            notif.style.borderColor = color;
+            notif.style.display = 'block';
+            setTimeout(() => {
+                notif.style.display = 'none';
+            }, 1500);
+        }
+
+        function activateDash() {
+            if (game.player.dashCooldown <= 0 && !game.player.isDashing) {
+                game.player.isDashing = true;
+                game.player.dashCooldown = game.player.maxDashCooldown;
+                document.getElementById('player').classList.add('boosting');
+                
+                setTimeout(() => {
+                    game.player.isDashing = false;
+                    document.getElementById('player').classList.remove('boosting');
+                }, 300);
+            }
+        }
+
+        function activateSlash() {
+            if (game.player.slashCooldown <= 0) {
+                game.player.slashCooldown = game.player.maxSlashCooldown;
+                document.getElementById('player').classList.add('slashing');
+                
+                const slashRange = 100;
+                let killedCount = 0;
+                
+                for (let i = game.titans.length - 1; i >= 0; i--) {
+                    const titan = game.titans[i];
+                    const dx = (titan.x + titan.width/2) - (game.player.x + game.player.width/2);
+                    const dy = (titan.y + titan.height/2) - (game.player.y + game.player.height/2);
+                    const distance = Math.sqrt(dx*dx + dy*dy);
+                    
+                    if (distance < slashRange) {
+                        if (titan.type === 'armored' && titan.hits < 2) {
+                            titan.hits++;
+                            createExplosion(titan.x + titan.width/2, titan.y + titan.height/2, 60);
+                        } else {
+                            createExplosion(titan.x + titan.width/2, titan.y + titan.height/2);
+                            game.titans.splice(i, 1);
+                            game.kills++;
+                            game.score += 50;
+                            killedCount++;
+                        }
+                    }
+                }
+                
+                if (killedCount > 0) {
+                    showNotification(`⚔️ ${killedCount} TITAN${killedCount > 1 ? 'S' : ''} SLAIN!`, '#ff4444');
+                }
+                
+                setTimeout(() => {
+                    document.getElementById('player').classList.remove('slashing');
+                }, 400);
+            }
+        }
+
+        function activateUltimate() {
+            if (game.player.ultimateCooldown <= 0) {
+                game.player.ultimateCooldown = game.player.maxUltimateCooldown;
+                
+                const spearX = game.player.x + game.player.width;
+                const spearY = game.player.y + game.player.height/2;
+                
+                createBlade(spearX, spearY, 20);
+                
+                setTimeout(() => {
+                    createExplosion(canvas.width/2, canvas.height/2, 200);
+                    
+                    let killedCount = 0;
+                    for (let i = game.titans.length - 1; i >= 0; i--) {
+                        game.titans.splice(i, 1);
+                        killedCount++;
+                    }
+                    
+                    game.kills += killedCount;
+                    showNotification(`💥 THUNDER SPEAR: ${killedCount} TITANS ELIMINATED!`, '#ffd700');
+                }, 300);
+            }
+        }
+
+        function createBlade(x, y, speed) {
+            game.blades.push({x, y, speed, lifetime: 30});
+        }
+
+        function createExplosion(x, y, size = 80) {
+            const explosion = document.createElement('div');
+            explosion.className = 'explosion';
+            explosion.style.left = (x - size/2) + 'px';
+            explosion.style.top = (y - size/2) + 'px';
+            explosion.style.width = size + 'px';
+            explosion.style.height = size + 'px';
+            document.getElementById('gameContainer').appendChild(explosion);
+            
+            setTimeout(() => explosion.remove(), 500);
+        }
+
+        function spawnPowerup() {
+            const types = ['thunder', 'shield', 'blade'];
+            const type = types[Math.floor(Math.random() * types.length)];
+            game.powerups.push({
+                x: Math.random() * (canvas.width - 100) + 50,
+                y: Math.random() * (canvas.height - 200) + 50,
+                type: type,
+                width: 30,
+                height: 30
+            });
+        }
+
+        function collectPowerup(powerup) {
+            if (powerup.type === 'thunder') {
+                game.player.ultimateCooldown = Math.max(0, game.player.ultimateCooldown - 300);
+                showNotification('⚡ THUNDER SPEAR CHARGED!', '#ffd700');
+            } else if (powerup.type === 'shield') {
+                game.player.invincible = true;
+                game.player.invincibleTimer = 300;
+                document.getElementById('player').classList.add('invincible');
+                showNotification('🛡️ INVINCIBILITY ACTIVATED!', '#4da6ff');
+            } else if (powerup.type === 'blade') {
+                game.player.slashCooldown = 0;
+                showNotification('⚔️ BLADES SHARPENED!', '#ff4444');
+            }
+        }
+
+        function updatePlayer() {
+            const speed = game.player.isDashing ? game.player.dashSpeed : game.player.speed;
+            
+            if (game.keys['arrowup'] || game.keys['w']) {
+                game.player.y = Math.max(0, game.player.y - speed);
+            }
+            if (game.keys['arrowdown'] || game.keys['s']) {
+                game.player.y = Math.min(canvas.height - game.player.height - 150, game.player.y + speed);
+            }
+            if (game.keys['arrowleft'] || game.keys['a']) {
+                game.player.x = Math.max(0, game.player.x - speed);
+            }
+            if (game.keys['arrowright'] || game.keys['d']) {
+                game.player.x = Math.min(canvas.width - game.player.width, game.player.x + speed);
+            }
+
+            if (game.player.dashCooldown > 0) game.player.dashCooldown--;
+            if (game.player.slashCooldown > 0) game.player.slashCooldown--;
+            if (game.player.ultimateCooldown > 0) game.player.ultimateCooldown--;
+            
+            if (game.player.invincible) {
+                game.player.invincibleTimer--;
+                if (game.player.invincibleTimer <= 0) {
+                    game.player.invincible = false;
+                    document.getElementById('player').classList.remove('invincible');
+                }
+            }
+
+            updateAbilityUI();
+            
+            for (let i = game.powerups.length - 1; i >= 0; i--) {
+                const powerup = game.powerups[i];
+                if (game.player.x < powerup.x + powerup.width &&
+                    game.player.x + game.player.width > powerup.x &&
+                    game.player.y < powerup.y + powerup.height &&
+                    game.player.y + game.player.height > powerup.y) {
+                    collectPowerup(powerup);
+                    game.powerups.splice(i, 1);
+                }
+            }
+        }
+
+        function updateAbilityUI() {
+            const dashPercent = Math.max(0, (1 - game.player.dashCooldown / game.player.maxDashCooldown) * 100);
+            document.getElementById('dashFill').style.width = dashPercent + '%';
+            document.getElementById('dashAbility').className = dashPercent >= 100 ? 'ability ready' : 'ability cooldown';
+            
+            const slashPercent = Math.max(0, (1 - game.player.slashCooldown / game.player.maxSlashCooldown) * 100);
+            document.getElementById('slashFill').style.width = slashPercent + '%';
+            document.getElementById('slashAbility').className = slashPercent >= 100 ? 'ability ready' : 'ability cooldown';
+            
+            const ultimatePercent = Math.max(0, (1 - game.player.ultimateCooldown / game.player.maxUltimateCooldown) * 100);
+            document.getElementById('ultimateFill').style.width = ultimatePercent + '%';
+            document.getElementById('ultimateAbility').className = ultimatePercent >= 100 ? 'ability ready' : 'ability cooldown';
+        }
+
+        function spawnTitan() {
+            const rand = Math.random();
+            let type = 'normal';
+            let width = 60;
+            let height = 80;
+            let speed = 2 + game.difficulty * 0.3;
+            let special = null;
+            
+            if (rand < 0.05 && game.difficulty >= 3) {
+                type = 'beast';
+                special = 'throws';
+            } else if (rand < 0.10 && game.difficulty >= 2) {
+                type = 'abnormal';
+                speed *= 1.5;
+                special = 'chase';
+            } else if (rand < 0.35) {
+                type = 'colossal';
+                width = 90;
+                height = 120;
+                speed *= 0.6;
+            } else if (rand < 0.40) {
+                type = 'armored';
+                speed *= 0.8;
+            }
+            
+            const titan = {
+                x: canvas.width,
+                y: Math.random() * (canvas.height - 150 - height),
+                width: width,
+                height: height,
+                speed: speed,
+                type: type,
+                special: special,
+                hits: type === 'armored' ? 1 : 0,
+                throwTimer: 0,
+                minX: 0
+            };
+            game.titans.push(titan);
+            
+            if (type !== 'normal' && rand < 0.1) {
+                showNotification(`⚠️ ${type.toUpperCase()} TITAN SPOTTED!`, '#ff6666');
+            }
+        }
+
+        function updateTitans() {
+            game.spawnTimer++;
+            
+            const currentSpawnInterval = Math.max(30, game.spawnInterval - game.difficulty * 5);
+            
+            if (game.spawnTimer >= currentSpawnInterval) {
+                spawnTitan();
+                game.spawnTimer = 0;
+            }
+
+            for (let i = game.titans.length - 1; i >= 0; i--) {
+                const titan = game.titans[i];
+                
+                if (titan.special === 'chase') {
+                    const dx = game.player.x - titan.x;
+                    const dy = game.player.y - titan.y;
+                    const distance = Math.sqrt(dx*dx + dy*dy);
+                    
+                    if (distance > 0 && titan.x > game.player.x) {
+                        // Only chase if titan is ahead of player (titan on right, player on left)
+                        const moveX = (dx / distance) * titan.speed;
+                        const moveY = (dy / distance) * titan.speed;
+                        
+                        titan.x += moveX;
+                        titan.y += moveY;
+                        
+                        // Keep within bounds
+                        titan.y = Math.max(0, Math.min(canvas.height - 150 - titan.height, titan.y));
+                    } else {
+                        // If player passed the titan, just move left normally
+                        titan.x -= titan.speed * 0.5;
+                    }
+                } else if (titan.special === 'throws') {
+                    titan.x -= titan.speed;
+                    titan.throwTimer++;
+                    
+                    if (titan.throwTimer >= 120) {
+                        const rock = {
+                            x: titan.x,
+                            y: titan.y + titan.height/2,
+                            width: 20,
+                            height: 20,
+                            speedX: -5,
+                            speedY: (game.player.y - titan.y) / 50
+                        };
+                        game.projectiles.push(rock);
+                        titan.throwTimer = 0;
+                    }
+                } else {
+                    titan.x -= titan.speed;
+                }
+                
+                if (titan.x + titan.width < 0) {
+                    game.titans.splice(i, 1);
+                }
+            }
+            
+            for (let i = game.projectiles.length - 1; i >= 0; i--) {
+                const rock = game.projectiles[i];
+                rock.x += rock.speedX;
+                rock.y += rock.speedY;
+                
+                if (rock.x < 0 || rock.y < 0 || rock.y > canvas.height) {
+                    game.projectiles.splice(i, 1);
+                }
+            }
+        }
+
+        function checkCollisions() {
+            if (game.player.invincible) return;
+            
+            for (const titan of game.titans) {
+                if (game.player.x < titan.x + titan.width &&
+                    game.player.x + game.player.width > titan.x &&
+                    game.player.y < titan.y + titan.height &&
+                    game.player.y + game.player.height > titan.y) {
+                    gameOver();
+                }
+            }
+            
+            for (const rock of game.projectiles) {
+                if (game.player.x < rock.x + rock.width &&
+                    game.player.x + game.player.width > rock.x &&
+                    game.player.y < rock.y + rock.height &&
+                    game.player.y + game.player.height > rock.y) {
+                    gameOver();
+                }
+            }
+        }
+
+        function updateBlades() {
+            for (let i = game.blades.length - 1; i >= 0; i--) {
+                const blade = game.blades[i];
+                blade.x += blade.speed;
+                blade.lifetime--;
+                
+                if (blade.lifetime <= 0 || blade.x > canvas.width) {
+                    game.blades.splice(i, 1);
+                }
+            }
+        }
+
+        function updateScore() {
+            game.score++;
+            game.difficultyTimer++;
+            game.powerupTimer++;
+            
+            if (game.difficultyTimer >= 600) {
+                game.difficulty++;
+                game.difficultyTimer = 0;
+                showNotification(`📈 WAVE ${game.difficulty}!`, '#ff6666');
+            }
+            
+            if (game.powerupTimer >= 450) {
+                spawnPowerup();
+                game.powerupTimer = 0;
+            }
+            
+            document.getElementById('score').textContent = game.score;
+            document.getElementById('kills').textContent = game.kills;
+            document.getElementById('difficulty').textContent = game.difficulty;
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const playerEl = document.getElementById('player');
+            if (playerEl) {
+                playerEl.style.left = game.player.x + 'px';
+                playerEl.style.top = game.player.y + 'px';
+            }
+            
+            document.querySelectorAll('.titan').forEach(el => el.remove());
+            document.querySelectorAll('.powerup').forEach(el => el.remove());
+            document.querySelectorAll('.blade').forEach(el => el.remove());
+            
+            for (const titan of game.titans) {
+                const titanEl = document.createElement('div');
+                titanEl.className = `titan ${titan.type}`;
+                titanEl.style.left = titan.x + 'px';
+                titanEl.style.top = titan.y + 'px';
+                titanEl.style.width = titan.width + 'px';
+                titanEl.style.height = titan.height + 'px';
+                document.getElementById('gameContainer').appendChild(titanEl);
+            }
+            
+            for (const powerup of game.powerups) {
+                const powerupEl = document.createElement('div');
+                powerupEl.className = `powerup ${powerup.type}`;
+                powerupEl.style.left = powerup.x + 'px';
+                powerupEl.style.top = powerup.y + 'px';
+                document.getElementById('gameContainer').appendChild(powerupEl);
+            }
+            
+            for (const blade of game.blades) {
+                const bladeEl = document.createElement('div');
+                bladeEl.className = 'blade';
+                bladeEl.style.left = blade.x + 'px';
+                bladeEl.style.top = blade.y + 'px';
+                document.getElementById('gameContainer').appendChild(bladeEl);
+            }
+            
+            ctx.fillStyle = '#8b4513';
+            for (const rock of game.projectiles) {
+                ctx.beginPath();
+                ctx.arc(rock.x + rock.width/2, rock.y + rock.height/2, rock.width/2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function gameOver() {
+            game.running = false;
+            
+            if (game.score > highScore) {
+                highScore = game.score;
+                localStorage.setItem('titanDodgeHighScore', highScore);
+                showNotification('🏆 NEW HIGH SCORE!', '#ffd700');
+                setTimeout(() => {
+                    displayGameOver();
+                }, 1600);
+            } else {
+                displayGameOver();
+            }
+        }
+
+        function displayGameOver() {
+            document.getElementById('finalScore').textContent = `Final Score: ${game.score}`;
+            document.getElementById('stats').innerHTML = `
+                Titans Killed: ${game.kills}<br>
+                Wave Reached: ${game.difficulty}<br>
+                High Score: ${highScore}
+            `;
+            document.getElementById('gameOverScreen').style.display = 'flex';
+        }
+
+        function gameLoop() {
+            if (!game.running) return;
+            
+            updatePlayer();
+            updateTitans();
+            updateBlades();
+            checkCollisions();
+            updateScore();
+            render();
+            
+            requestAnimationFrame(gameLoop);
+        }
+    </script>
+</body>
+</html>
