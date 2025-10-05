@@ -64,31 +64,12 @@
             position: absolute;
             width: 40px;
             height: 40px;
-            background: #2d4a2b;
-            border: 3px solid #1a1a1a;
-            border-radius: 5px;
+            background-image: url('assets/user.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
             transition: box-shadow 0.1s;
             z-index: 50;
-        }
-
-        #player::before {
-            content: '';
-            position: absolute;
-            top: 8px;
-            left: 8px;
-            right: 8px;
-            bottom: 8px;
-            background: #c19a6b;
-            border-radius: 50%;
-        }
-
-        #player::after {
-            content: '⚔';
-            position: absolute;
-            font-size: 20px;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
         }
 
         #player.boosting {
@@ -125,52 +106,30 @@
             position: absolute;
             width: 60px;
             height: 80px;
-            background: #d4a574;
-            border: 3px solid #8b4513;
-            border-radius: 10px 10px 5px 5px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
             transition: transform 0.1s;
         }
 
-        .titan::before {
-            content: '';
-            position: absolute;
-            top: 15px;
-            left: 12px;
-            width: 12px;
-            height: 12px;
-            background: #000;
-            border-radius: 50%;
-            box-shadow: 22px 0 0 #000;
-        }
-
-        .titan::after {
-            content: '';
-            position: absolute;
-            bottom: 25px;
-            left: 15px;
-            width: 30px;
-            height: 8px;
-            background: #000;
-            border-radius: 3px;
+        .titan.normal {
+            background-image: url('assets/normal.png');
         }
 
         .titan.armored {
-            background: #696969;
-            border-color: #2f4f4f;
+            background-image: url('assets/armored.png');
             box-shadow: 0 0 15px rgba(105, 105, 105, 0.6);
         }
 
         .titan.colossal {
             width: 90px;
             height: 120px;
-            background: #ff6b6b;
-            border-color: #c92a2a;
+            background-image: url('assets/giant.png');
             box-shadow: 0 0 20px rgba(255, 107, 107, 0.8);
         }
 
         .titan.abnormal {
-            background: #9b59b6;
-            border-color: #6c3483;
+            background-image: url('assets/abnormal.png');
             animation: abnormalWobble 0.5s ease-in-out infinite;
         }
 
@@ -180,8 +139,7 @@
         }
 
         .titan.beast {
-            background: #8b7355;
-            border-color: #654321;
+            background-image: url('assets/beast.png');
             box-shadow: 0 0 15px rgba(139, 115, 85, 0.6);
         }
 
@@ -390,6 +348,9 @@
     <div id="gameContainer">
         <canvas id="gameCanvas" width="800" height="600"></canvas>
         <div class="wall"></div>
+        <audio id="backgroundMusic" loop>
+            <source src="audio/music.mp3" type="audio/mpeg">
+        </audio>
         
         <div id="player"></div>
         
@@ -476,6 +437,10 @@
         let highScore = parseInt(localStorage.getItem('titanDodgeHighScore')) || 0;
         document.getElementById('highScore').textContent = `🏆 High Score: ${highScore}`;
 
+        // Background music setup
+        const backgroundMusic = document.getElementById('backgroundMusic');
+        backgroundMusic.volume = 0.3; // Set volume to 30%
+
         // Add event listeners
         document.getElementById('startBtn').addEventListener('click', startGame);
         document.getElementById('restartBtn').addEventListener('click', restartGame);
@@ -522,6 +487,12 @@
             game.spawnTimer = 0;
             game.difficultyTimer = 0;
             game.powerupTimer = 0;
+            
+            // Start background music
+            backgroundMusic.play().catch(e => {
+                console.log('Audio autoplay prevented:', e);
+            });
+            
             gameLoop();
         }
 
@@ -930,6 +901,10 @@
 
         function gameOver() {
             game.running = false;
+            
+            // Pause background music
+            backgroundMusic.pause();
+            backgroundMusic.currentTime = 0;
             
             if (game.score > highScore) {
                 highScore = game.score;
