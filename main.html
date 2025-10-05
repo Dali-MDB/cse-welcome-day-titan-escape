@@ -276,7 +276,7 @@
             100% { transform: translateX(-50%) translateY(0); opacity: 1; }
         }
 
-        #startScreen, #gameOverScreen {
+        #startScreen, #gameOverScreen, #leaderboardScreen {
             position: absolute;
             top: 0;
             left: 0;
@@ -298,6 +298,13 @@
             text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
         }
 
+        h2 {
+            font-size: 32px;
+            margin-bottom: 15px;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
         .btn {
             padding: 15px 40px;
             font-size: 24px;
@@ -309,12 +316,21 @@
             font-family: 'Arial Black', sans-serif;
             box-shadow: 0 5px 15px rgba(0,0,0,0.5);
             transition: all 0.3s;
+            margin: 5px;
         }
 
         .btn:hover {
             background: #ff6666;
             transform: translateY(-2px);
             box-shadow: 0 7px 20px rgba(0,0,0,0.6);
+        }
+
+        .btn.secondary {
+            background: #4da6ff;
+        }
+
+        .btn.secondary:hover {
+            background: #6bb8ff;
         }
 
         .instructions {
@@ -341,6 +357,108 @@
             font-size: 20px;
             margin-top: 10px;
             color: #4da6ff;
+        }
+
+        .name-input-container {
+            margin: 20px 0;
+        }
+
+        .name-input {
+            padding: 12px 20px;
+            font-size: 20px;
+            border: 3px solid #4da6ff;
+            border-radius: 5px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            font-family: 'Arial Black', sans-serif;
+            text-align: center;
+            width: 300px;
+        }
+
+        .name-input:focus {
+            outline: none;
+            border-color: #ffd700;
+            box-shadow: 0 0 20px rgba(77, 166, 255, 0.5);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        #leaderboardTable {
+            background: rgba(0,0,0,0.7);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            width: 600px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .leaderboard-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 20px;
+            margin: 5px 0;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+            border-left: 4px solid #4da6ff;
+        }
+
+        .leaderboard-row.rank-1 {
+            border-left-color: #ffd700;
+            background: rgba(255, 215, 0, 0.2);
+        }
+
+        .leaderboard-row.rank-2 {
+            border-left-color: #c0c0c0;
+            background: rgba(192, 192, 192, 0.2);
+        }
+
+        .leaderboard-row.rank-3 {
+            border-left-color: #cd7f32;
+            background: rgba(205, 127, 50, 0.2);
+        }
+
+        .leaderboard-row.current-player {
+            border: 2px solid #ff4444;
+            background: rgba(255, 68, 68, 0.2);
+        }
+
+        .rank {
+            font-size: 20px;
+            font-weight: bold;
+            min-width: 40px;
+        }
+
+        .player-name {
+            font-size: 18px;
+            flex: 1;
+            text-align: left;
+            padding-left: 20px;
+        }
+
+        .player-score {
+            font-size: 18px;
+            color: #ffd700;
+            min-width: 100px;
+            text-align: right;
+        }
+
+        .player-stats {
+            font-size: 14px;
+            color: #4da6ff;
+            min-width: 150px;
+            text-align: right;
+        }
+
+        .no-scores {
+            text-align: center;
+            color: #888;
+            padding: 40px;
+            font-size: 18px;
         }
     </style>
 </head>
@@ -384,7 +502,10 @@
                 <p><strong>SPACE</strong> - ODM Dash | <strong>Q</strong> - Blade Slash | <strong>E</strong> - Thunder Spear</p>
                 <p style="margin-top: 10px;"><strong>🎯 SURVIVE:</strong> Dodge titans and collect powerups!</p>
             </div>
-            <button class="btn" id="startBtn" style="margin-top: 30px; font-size: 28px; padding: 20px 50px;">START MISSION</button>
+            <div class="button-group">
+                <button class="btn" id="startBtn">START MISSION</button>
+                <button class="btn secondary" id="viewLeaderboardBtn">VIEW LEADERBOARD</button>
+            </div>
             <div id="highScore" style="margin-top: 20px;"></div>
         </div>
 
@@ -393,7 +514,23 @@
             <p style="font-size: 24px; margin-bottom: 20px;">You Were Caught!</p>
             <div id="finalScore"></div>
             <div id="stats"></div>
-            <button class="btn" id="restartBtn">TRY AGAIN</button>
+            <div class="name-input-container">
+                <p style="margin-bottom: 10px; font-size: 18px;">Enter your name for the leaderboard:</p>
+                <input type="text" id="playerNameInput" class="name-input" placeholder="Your Name" maxlength="20">
+            </div>
+            <div class="button-group">
+                <button class="btn" id="submitScoreBtn">SUBMIT SCORE</button>
+                <button class="btn secondary" id="skipSubmitBtn">SKIP</button>
+            </div>
+        </div>
+
+        <div id="leaderboardScreen" style="display: none;">
+            <h1>🏆 LEADERBOARD 🏆</h1>
+            <div id="leaderboardTable"></div>
+            <div class="button-group">
+                <button class="btn" id="playAgainFromLeaderboard">PLAY AGAIN</button>
+                <button class="btn secondary" id="backToMenuBtn">BACK TO MENU</button>
+            </div>
         </div>
     </div>
 
@@ -434,16 +571,82 @@
             powerupTimer: 0
         };
 
-        let highScore = parseInt(localStorage.getItem('titanDodgeHighScore')) || 0;
+        // Leaderboard management
+        function getLeaderboard() {
+            const data = JSON.parse(window.localStorage.getItem('titanDodgeLeaderboard') || '[]');
+            return data.sort((a, b) => b.score - a.score);
+        }
+
+        function saveScore(name, score, kills, wave) {
+            const leaderboard = getLeaderboard();
+            leaderboard.push({
+                name: name,
+                score: score,
+                kills: kills,
+                wave: wave,
+                date: new Date().toISOString()
+            });
+            leaderboard.sort((a, b) => b.score - a.score);
+            // Keep top 50 scores
+            const topScores = leaderboard.slice(0, 50);
+            window.localStorage.setItem('titanDodgeLeaderboard', JSON.stringify(topScores));
+        }
+
+        function displayLeaderboard(currentScore = null) {
+            const leaderboard = getLeaderboard();
+            const table = document.getElementById('leaderboardTable');
+            
+            if (leaderboard.length === 0) {
+                table.innerHTML = '<div class="no-scores">No scores yet. Be the first to set a record!</div>';
+                return;
+            }
+
+            let html = '';
+            leaderboard.slice(0, 20).forEach((entry, index) => {
+                const rank = index + 1;
+                const isCurrent = currentScore && entry.score === currentScore && entry.date === currentScore.date;
+                const rankClass = rank <= 3 ? `rank-${rank}` : '';
+                const currentClass = isCurrent ? 'current-player' : '';
+                
+                html += `
+                    <div class="leaderboard-row ${rankClass} ${currentClass}">
+                        <div class="rank">#${rank}</div>
+                        <div class="player-name">${entry.name}</div>
+                        <div class="player-stats">W${entry.wave} | K${entry.kills}</div>
+                        <div class="player-score">${entry.score}</div>
+                    </div>
+                `;
+            });
+            
+            table.innerHTML = html;
+        }
+
+        let highScore = getLeaderboard()[0]?.score || 0;
         document.getElementById('highScore').textContent = `🏆 High Score: ${highScore}`;
 
         // Background music setup
         const backgroundMusic = document.getElementById('backgroundMusic');
-        backgroundMusic.volume = 0.3; // Set volume to 30%
+        backgroundMusic.volume = 0.3;
 
-        // Add event listeners
+        // Event listeners
         document.getElementById('startBtn').addEventListener('click', startGame);
-        document.getElementById('restartBtn').addEventListener('click', restartGame);
+        document.getElementById('viewLeaderboardBtn').addEventListener('click', showLeaderboard);
+        document.getElementById('submitScoreBtn').addEventListener('click', submitScore);
+        document.getElementById('skipSubmitBtn').addEventListener('click', () => showLeaderboard());
+        document.getElementById('playAgainFromLeaderboard').addEventListener('click', () => {
+            document.getElementById('leaderboardScreen').style.display = 'none';
+            startGame();
+        });
+        document.getElementById('backToMenuBtn').addEventListener('click', () => {
+            document.getElementById('leaderboardScreen').style.display = 'none';
+            document.getElementById('startScreen').style.display = 'flex';
+        });
+
+        document.getElementById('playerNameInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                submitScore();
+            }
+        });
 
         document.addEventListener('keydown', (e) => {
             game.keys[e.key.toLowerCase()] = true;
@@ -470,6 +673,8 @@
 
         function startGame() {
             document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('gameOverScreen').style.display = 'none';
+            document.getElementById('leaderboardScreen').style.display = 'none';
             game.running = true;
             game.score = 0;
             game.kills = 0;
@@ -488,7 +693,6 @@
             game.difficultyTimer = 0;
             game.powerupTimer = 0;
             
-            // Start background music
             backgroundMusic.play().catch(e => {
                 console.log('Audio autoplay prevented:', e);
             });
@@ -496,9 +700,26 @@
             gameLoop();
         }
 
-        function restartGame() {
+        function submitScore() {
+            const nameInput = document.getElementById('playerNameInput');
+            const playerName = nameInput.value.trim() || 'Anonymous';
+            
+            saveScore(playerName, game.score, game.kills, game.difficulty);
+            
+            const leaderboard = getLeaderboard();
+            const currentEntry = leaderboard.find(entry => 
+                entry.score === game.score && 
+                entry.name === playerName
+            );
+            
+            showLeaderboard(currentEntry);
+        }
+
+        function showLeaderboard(currentScore = null) {
             document.getElementById('gameOverScreen').style.display = 'none';
-            startGame();
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('leaderboardScreen').style.display = 'flex';
+            displayLeaderboard(currentScore);
         }
 
         function showNotification(text, color = '#4da6ff') {
@@ -748,17 +969,14 @@
                     const distance = Math.sqrt(dx*dx + dy*dy);
                     
                     if (distance > 0 && titan.x > game.player.x) {
-                        // Only chase if titan is ahead of player (titan on right, player on left)
                         const moveX = (dx / distance) * titan.speed;
                         const moveY = (dy / distance) * titan.speed;
                         
                         titan.x += moveX;
                         titan.y += moveY;
                         
-                        // Keep within bounds
                         titan.y = Math.max(0, Math.min(canvas.height - 150 - titan.height, titan.y));
                     } else {
-                        // If player passed the titan, just move left normally
                         titan.x -= titan.speed * 0.5;
                     }
                 } else if (titan.special === 'throws') {
@@ -902,30 +1120,21 @@
         function gameOver() {
             game.running = false;
             
-            // Pause background music
             backgroundMusic.pause();
             backgroundMusic.currentTime = 0;
             
-            if (game.score > highScore) {
-                highScore = game.score;
-                localStorage.setItem('titanDodgeHighScore', highScore);
-                showNotification('🏆 NEW HIGH SCORE!', '#ffd700');
-                setTimeout(() => {
-                    displayGameOver();
-                }, 1600);
-            } else {
-                displayGameOver();
-            }
-        }
-
-        function displayGameOver() {
             document.getElementById('finalScore').textContent = `Final Score: ${game.score}`;
             document.getElementById('stats').innerHTML = `
                 Titans Killed: ${game.kills}<br>
-                Wave Reached: ${game.difficulty}<br>
-                High Score: ${highScore}
+                Wave Reached: ${game.difficulty}
             `;
+            
+            document.getElementById('playerNameInput').value = '';
             document.getElementById('gameOverScreen').style.display = 'flex';
+            
+            setTimeout(() => {
+                document.getElementById('playerNameInput').focus();
+            }, 100);
         }
 
         function gameLoop() {
